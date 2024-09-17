@@ -154,6 +154,12 @@ const VerifyAdmin = async(req, res, next) =>{
       const result = await menuCollection.insertOne(itemInfo)
       res.send(result)
     })
+    //line added for demo
+    app.post('/update-item',async(req, res) =>{
+      const itemInfo = req.body;
+      const result = await menuCollection.updateOne(itemInfo)
+      res.send(result)
+    })
 
     app.patch('/user/admin/:id', async(req, res) =>{
       const id = req.params.id;
