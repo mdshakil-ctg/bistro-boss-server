@@ -40,6 +40,7 @@ const categoriesCollection = client.db('bistroDB').collection('categories');
 const reviewsCollection = client.db('bistroDB').collection('reviews');
 const usersCollection = client.db('bistroDB').collection('users');
 const cartsCollection = client.db('bistroDB').collection('carts');
+const bookingsCollection = client.db('bistroDB').collection('bookings');
 
 //Middleware Functions
 
@@ -67,7 +68,7 @@ const VerifyAdmin = async(req, res, next) =>{
   const isAdmin = user?.role === 'admin';
   console.log(email, isAdmin, user);
   if(!isAdmin){
-    return  res.status(403).send({message: "Forbidden Access"})
+    return  res.status(404).send({message: "Forbidden Access"})
   }
   next()
 }
@@ -137,16 +138,60 @@ const VerifyAdmin = async(req, res, next) =>{
       res.send(result)
     })
 
+    //booking or reservation api
+    app.get('/myBookings', async(req, res) =>{
+      const userEmail = req.query.email;
+      // console.log({userEmail})
+      const query = {email: userEmail}
+      const allBookings = await bookingsCollection.find(query).toArray() 
+      res.send({allBookings})
+    })
+    app.post('/booking', async(req, res) =>{
+      const Data = req.body.bookingData;
+      // console.log({Data})
+      const result = await bookingsCollection.insertOne(Data);
+      res.send(result);
+    })
+
+    app.delete('/booking', async(req, res) =>{
+      const email = req.query.email
+      const id = req.query.id
+      const query = {
+        email: email,
+        _id: new ObjectId(id)
+      }
+      const result = await bookingsCollection.find(query).toArray()
+      if(result){
+        const deleteAction = await bookingsCollection.deleteOne(query)
+        res.send(deleteAction)
+      }
+      else{
+        res.status(400).send({message: 'Data is not found'})
+      }
+    })
+
     //admin api
     app.get('/users',VerifyToken, VerifyAdmin, async(req, res) =>{
       const result = await usersCollection.find().toArray()
       res.send(result);
     })
 
-    app.get('/user/admin/:email', async(req, res) =>{
-      const email = req.params.email
-      console.log('hiting email',email);
-      res.send({isAdmin: true})
+    //set isAdmin dashboard routes.
+    app.get('/user/admin/:email',VerifyToken, async(req, res) =>{
+      const userEmail = req.params.email
+      console.log("decoded email",req.decoded)
+      // res.send({isAdmin: true})
+      if(userEmail !== req.decoded.email){
+        res.status(200).send({message: 'Normal Access'})
+      }
+      const query = {email : userEmail}
+      const result = await usersCollection.findOne(query)
+      if(result.role === "admin"){
+        res.status(200).send({isAdmin: true})
+      }
+      else{
+        res.status(200).send({isAdmin:false})
+      }
     })
 
     app.post('/add-item',async(req, res) =>{
