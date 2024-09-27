@@ -345,6 +345,8 @@ async function run() {
     //   res.send(result);
     // });
 
+    //update item information api
+
     app.put("/updateItem/:id", VerifyToken, VerifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: id };
@@ -358,6 +360,7 @@ async function run() {
         // Iterate over the itemInfo object
         Object.keys(itemInfo).forEach((key) => {
           const value = itemInfo[key];
+          console.log({value})
     
           // Log key and value to check their status
           console.log(`Checking key: ${key}, value: ${value}`);
@@ -368,7 +371,7 @@ async function run() {
           }
         });
     
-        // If updateDoc has fields to update, perform the update
+        // If updateDoc has fields to update, perform the update operation
         if (Object.keys(updateDoc.$set).length > 0) {
           try {
             const result = await menuCollection.updateOne(query, updateDoc, { upsert: false });
@@ -383,6 +386,12 @@ async function run() {
       // If no fields were updated, send this response
       res.status(200).send({ message: "No field was updated" });
     });
+
+    //delete menu item from database
+    app.delete('/deleteItem/:id',VerifyToken, VerifyAdmin, async(req, res)=>{
+      const result = await menuCollection.deleteOne({_id: req.params.id})
+      res.status(200).send(result)
+    })
     
 
     app.patch("/user/admin/:id", async (req, res) => {
