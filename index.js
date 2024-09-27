@@ -393,6 +393,21 @@ async function run() {
       res.status(200).send(result)
     })
     
+    //get the booking data from database
+    app.get('/bookings', async(req, res) =>{
+      const result = await bookingsCollection.find().toArray();
+      res.status(200).send(result)
+    })
+
+    app.put('/bookings/:id',VerifyToken, VerifyAdmin, async(req, res) =>{
+      const result = await bookingsCollection.updateOne(
+        {_id: new ObjectId(req.params.id)},
+        {$set:{
+          activity: true
+        }}
+      )
+      res.status(200).send(result)
+    })
 
     app.patch("/user/admin/:id", async (req, res) => {
       const id = req.params.id;
