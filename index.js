@@ -152,6 +152,13 @@ async function run() {
       res.send(result);
     });
 
+    //add review api
+    app.post('/review',VerifyToken, async(req, res) =>{
+      const {reviewData} = req.body;
+      const result = await reviewsCollection.insertOne(reviewData);
+      res.status(200).send(result)
+    })
+
     //booking or reservation api
     app.get("/myBookings", async (req, res) => {
       const userEmail = req.query.email;
@@ -325,12 +332,58 @@ async function run() {
       const result = await menuCollection.insertOne(itemInfo);
       res.send(result);
     });
-    //line added for demo
-    app.post("/update-item", async (req, res) => {
-      const itemInfo = req.body;
-      const result = await menuCollection.updateOne(itemInfo);
-      res.send(result);
+
+    app.get('/menuItem/:id',VerifyToken, VerifyAdmin, async(req, res) =>{
+      const query = {_id : req?.params?.id}
+      const result = await menuCollection.findOne(query);
+      res.status(200).send(result)
+    })
+
+    // app.post("/update-item", async (req, res) => {
+    //   const itemInfo = req.body;
+    //   const result = await menuCollection.updateOne(itemInfo);
+    //   res.send(result);
+    // });
+
+    app.put("/updateItem/:id", VerifyToken, VerifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: id };
+      const itemInfo = req.body; // Data received from the client
+      const updateDoc = { $set: {} }; // This will store the fields to be updated
+    
+      console.log("Initial updateDoc:", updateDoc);
+      console.log("Received itemInfo:", itemInfo);
+    
+      if (itemInfo) {
+        // Iterate over the itemInfo object
+        Object.keys(itemInfo).forEach((key) => {
+          const value = itemInfo[key];
+    
+          // Log key and value to check their status
+          console.log(`Checking key: ${key}, value: ${value}`);
+    
+          // Add only non-empty, non-null, non-undefined fields
+          if (value !== undefined && value !== null && value !== "") {
+            updateDoc.$set[key] = value; // Assign the key-value pair
+          }
+        });
+    
+        // If updateDoc has fields to update, perform the update
+        if (Object.keys(updateDoc.$set).length > 0) {
+          try {
+            const result = await menuCollection.updateOne(query, updateDoc, { upsert: false });
+            return res.status(200).send(result); // Send success response with result
+          } catch (error) {
+            console.error("Error updating item:", error);
+            return res.status(500).send({ message: "Update failed", error });
+          }
+        }
+      }
+    
+      // If no fields were updated, send this response
+      res.status(200).send({ message: "No field was updated" });
     });
+    
 
     app.patch("/user/admin/:id", async (req, res) => {
       const id = req.params.id;
