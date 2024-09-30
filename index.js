@@ -206,8 +206,9 @@ async function run() {
         })
         .toArray();
       const totalAmount = products.reduce((acc, currentValue) => {
-        return acc + currentValue.price;
+        return acc + Number(currentValue.price);
       }, 0);
+
       const data = {
         total_amount: totalAmount,
         currency: orderInfo.currency,
@@ -263,7 +264,7 @@ async function run() {
         const response = ordersCollection.insertOne(beforeSuccessPayment);
         res.status(200).send(GatewayPageURL);
 
-        console.log("Redirecting to: ", GatewayPageURL);
+        console.log("Redirecting to: ", GatewayPageURL, {totalAmount}, {products});
       });
 
       app.post("/payment/success/:tranId", async (req, res) => {
@@ -275,8 +276,10 @@ async function run() {
             },
           }
         );
+        const deleteCartItem = await cartsCollection.deleteMany({email: orderInfo.email, menuId: {$in: orderIds}})
+        console.log(deleteCartItem, orderInfo.email, orderIds);
         res.redirect(
-          `http://localhost:5173/dashboard/payment/success/${req.params.tranId}`
+          `http://localhost:5173/dashboard/payment/success/?tranId=${req.params.tranId}&amount=${totalAmount}`
         );
       });
 
@@ -303,9 +306,6 @@ async function run() {
 
     })
 
-   
-  
-
     //admin api
     app.get("/users", VerifyToken, VerifyAdmin, async (req, res) => {
       const result = await usersCollection.find().toArray();
@@ -319,8 +319,8 @@ async function run() {
         res.status(200).send({ message: "Normal Access" });
       }
       const query = { email: userEmail };
-      const result = await usersCollection.findOne(query);
-      if (result.role === "admin") {
+      const user = await usersCollection.findOne(query);
+      if (user?.role === "admin") {
         res.status(200).send({ isAdmin: true });
       } else {
         res.status(200).send({ isAdmin: false });
