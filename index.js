@@ -15,6 +15,7 @@ app.use(
     credentials: true,
   })
 );
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -37,7 +38,7 @@ const is_live = false; //true for live, false for sandbox
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     console.log("successfully connected to MongoDB!");
 
     //Database Collections
@@ -195,25 +196,140 @@ async function run() {
     //payment api sslcommerz
 
     const tran_id = new ObjectId().toString();
-    app.post("/order",VerifyToken, async (req, res) => {
+    
+    // app.post("/order",VerifyToken, async (req, res) => {
+    //   const orderInfo = req.body;
+    //   console.log(orderInfo);
+    //   let orderIds = orderInfo.orderIds || [];
+    //   const objectOrderIds = orderIds.map(id => ObjectId.createFromHexString(id) )
+    //   console.log(objectOrderIds);
+    //   const products = await menuCollection
+    //     .find({
+    //       _id: {
+    //         $in: objectOrderIds,
+    //       },
+    //     })
+    //     .toArray();
+    //   const totalAmount = products.reduce((acc, currentValue) => {
+    //     return acc + Number(currentValue.price);
+    //   }, 0);
+
+    //   const data = {
+    //     total_amount: totalAmount,
+    //     currency: orderInfo.currency,
+    //     tran_id: tran_id, // use unique tran_id for each api call
+    //     success_url: `http://localhost:5000/payment/success/${tran_id}`,
+    //     fail_url: `http://localhost:5000/payment/fail/${tran_id}`,
+    //     cancel_url: "http://localhost:3030/cancel",
+    //     ipn_url: "http://localhost:5000/payment/ipn",
+    //     shipping_method: "Courier",
+    //     product_name: orderInfo.name,
+    //     product_category: "Electronic",
+    //     product_profile: "general",
+    //     cus_name: orderInfo.name,
+    //     cus_email: orderInfo.email,
+    //     cus_add1: orderInfo.address,
+    //     cus_add2: "Dhaka",
+    //     cus_city: orderInfo.city,
+    //     cus_state: orderInfo.region,
+    //     cus_postcode: "1000",
+    //     cus_country: "Bangladesh",
+    //     cus_phone: orderInfo.phone,
+    //     cus_fax: "01711111111",
+    //     ship_name: "Customer Name",
+    //     ship_add1: "Dhaka",
+    //     ship_add2: "Dhaka",
+    //     ship_city: "Dhaka",
+    //     ship_state: "Dhaka",
+    //     ship_postcode: 1000,
+    //     ship_country: "Bangladesh",
+    //   };
+    //   // console.log(data);
+    //   const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+    //   sslcz.init(data).then((apiResponse) => {
+    //     // console.log('apiresponse', apiResponse)
+    //     // Redirect the user to payment gateway
+    //     let GatewayPageURL = apiResponse.GatewayPageURL;
+    //     //send a order to the database
+    //     const beforeSuccessPayment = {
+    //       products,
+    //       paidStatus: false,
+    //       tran_id,
+    //       totalAmount,
+    //       email: orderInfo.email,
+    //       name: orderInfo.name,
+    //       phone: orderInfo.phone,
+    //       region: orderInfo.region,
+    //       city: orderInfo.city,
+    //       currency: orderInfo.currency,
+    //       address: orderInfo.address,
+    //       orderIds: orderInfo.orderIds,
+    //       date: orderInfo.date,
+    //     };
+    //     const response = ordersCollection.insertOne(beforeSuccessPayment);
+    //     res.status(200).send(GatewayPageURL);
+
+    //     console.log("Redirecting to: ", GatewayPageURL, {totalAmount}, {products});
+    //   });
+
+    //   app.post("/payment/success/:tranId", async (req, res) => {
+    //     await ordersCollection.updateOne(
+    //       { tran_id: req.params.tranId },
+    //       {
+    //         $set: {
+    //           paidStatus: true,
+    //         },
+    //       }
+    //     );
+    //     const deleteCartItem = await cartsCollection.deleteMany({email: orderInfo.email, menuId: {$in: orderIds}})
+    //     console.log(deleteCartItem, orderInfo.email, {orderIds});
+        
+    //     res.redirect(
+    //       `http://localhost:5173/dashboard/payment/success/?tranId=${req.params.tranId}&amount=${totalAmount}`
+    //     );
+    //   });
+    //   console.log({orderIds})
+
+    //   app.post("/payment/fail/:tranId", async (req, res) => {
+    //     console.log(req.params.tranId);
+    //     await ordersCollection.updateOne(
+    //       { tran_id: req.params.tranId },
+    //       {
+    //         $set: {
+    //           paidStatus: false,
+    //         },
+    //       }
+    //     );
+    //     res.redirect(
+    //       `http://localhost:5173/dashboard/payment/fail/${req.params.tranId}`
+    //     );
+    //   });
+    // });
+
+    
+    //updated code for payment api sslcommerz
+    app.post("/order", VerifyToken, async (req, res) => {
       const orderInfo = req.body;
       console.log(orderInfo);
-      const orderIds = req.body.orderIds;
+      
+      let orderIds = orderInfo.orderIds || [];
+      const objectOrderIds = orderIds.map(id => ObjectId.createFromHexString(id));
+      console.log(objectOrderIds);
+      
       const products = await menuCollection
-        .find({
-          _id: {
-            $in: orderIds,
-          },
-        })
+        .find({ _id: { $in: objectOrderIds } })
         .toArray();
+      
       const totalAmount = products.reduce((acc, currentValue) => {
         return acc + Number(currentValue.price);
       }, 0);
-
+      
+      const tran_id = new ObjectId().toString(); // Ensure you have a function to generate a unique tran_id
+    
       const data = {
         total_amount: totalAmount,
         currency: orderInfo.currency,
-        tran_id: tran_id, // use unique tran_id for each api call
+        tran_id: tran_id, 
         success_url: `http://localhost:5000/payment/success/${tran_id}`,
         fail_url: `http://localhost:5000/payment/fail/${tran_id}`,
         cancel_url: "http://localhost:3030/cancel",
@@ -240,13 +356,13 @@ async function run() {
         ship_postcode: 1000,
         ship_country: "Bangladesh",
       };
-      // console.log(data);
-      const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
-      sslcz.init(data).then((apiResponse) => {
-        // console.log('apiresponse', apiResponse)
-        // Redirect the user to payment gateway
-        let GatewayPageURL = apiResponse.GatewayPageURL;
-        //send a order to the database
+    
+      try {
+        const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+        const apiResponse = await sslcz.init(data);
+        
+        const GatewayPageURL = apiResponse.GatewayPageURL;
+    
         const beforeSuccessPayment = {
           products,
           paidStatus: false,
@@ -262,43 +378,62 @@ async function run() {
           orderIds: orderInfo.orderIds,
           date: orderInfo.date,
         };
-        const response = ordersCollection.insertOne(beforeSuccessPayment);
+        
+        await ordersCollection.insertOne(beforeSuccessPayment);
+        
         res.status(200).send(GatewayPageURL);
-
-        console.log("Redirecting to: ", GatewayPageURL, {totalAmount}, {products});
-      });
-
-      app.post("/payment/success/:tranId", async (req, res) => {
-        await ordersCollection.updateOne(
-          { tran_id: req.params.tranId },
-          {
-            $set: {
-              paidStatus: true,
-            },
-          }
-        );
-        const deleteCartItem = await cartsCollection.deleteMany({email: orderInfo.email, menuId: {$in: orderIds}})
-        console.log(deleteCartItem, orderInfo.email, orderIds);
-        res.redirect(
-          `http://localhost:5173/dashboard/payment/success/?tranId=${req.params.tranId}&amount=${totalAmount}`
-        );
-      });
-
-      app.post("/payment/fail/:tranId", async (req, res) => {
-        console.log(req.params.tranId);
-        await ordersCollection.updateOne(
-          { tran_id: req.params.tranId },
-          {
-            $set: {
-              paidStatus: false,
-            },
-          }
-        );
-        res.redirect(
-          `http://localhost:5173/dashboard/payment/fail/${req.params.tranId}`
-        );
-      });
+        console.log("Redirecting to: ", GatewayPageURL, { totalAmount }, { products });
+    
+      } catch (error) {
+        console.error("Error during payment initialization:", error);
+        res.status(500).send("Internal Server Error");
+      }
     });
+    
+    app.post("/payment/success/:tranId", async (req, res) => {
+      const tranId = req.params.tranId;
+    
+      // Find the order by tran_id to get order details, including orderIds
+      const order = await ordersCollection.findOne({ tran_id: tranId });
+      
+      if (order) {
+        await ordersCollection.updateOne(
+          { tran_id: tranId },
+          { $set: { paidStatus: true } }
+        );
+    
+        const deleteCartItem = await cartsCollection.deleteMany({
+          email: order.email, 
+          menuId: { $in: order.orderIds } // Use the order's orderIds here
+        });
+    
+        console.log(deleteCartItem, order.email, { orderIds: order.orderIds });
+        
+        res.redirect(
+          `http://localhost:5173/dashboard/payment/success/?tranId=${tranId}&amount=${order.totalAmount}`
+        );
+      } else {
+        console.error("Order not found:", tranId);
+        res.status(404).send("Order not found");
+      }
+    });
+    
+    app.post("/payment/fail/:tranId", async (req, res) => {
+      const tranId = req.params.tranId;
+      console.log(tranId);
+      
+      await ordersCollection.updateOne(
+        { tran_id: tranId },
+        { $set: { paidStatus: false } }
+      );
+      
+      res.redirect(
+        `http://localhost:5173/dashboard/payment/fail/${tranId}`
+      );
+    });
+    
+
+
 
     //payment-history api
     app.get('/payment-history/:email',VerifyToken, async(req, res) =>{
