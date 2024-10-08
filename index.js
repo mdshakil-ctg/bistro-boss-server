@@ -99,6 +99,7 @@ async function run() {
         .send({ message: "cookie set the token" });
     });
     app.get("/menu", async (req, res) => {
+      console.log("api menu hitting")
       const cursor = menuCollection.find();
       const result = await cursor.toArray();
       res.send(result);
