@@ -11,7 +11,11 @@ const port = process.env.PORT || 5000;
 //middlewares
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      "https://simple-restaurent.web.app",
+       "http://localhost:5174",
+        "http://localhost:5173"
+      ],
     credentials: true,
   })
 );
@@ -39,7 +43,7 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
-    console.log("successfully connected to MongoDB!");
+    // console.log("successfully connected to MongoDB!");
 
     //Database Collections
     const menuCollection = client.db("bistroDB").collection("menu");
@@ -53,13 +57,15 @@ async function run() {
     //Middleware Functions
 
     const VerifyToken = (req, res, next) => {
+      // console.log('verify token api hitting')
       const token = req.cookies.token;
+      // console.log(token);
       if (!token) {
         return res.status(401).send({ message: "UnAuthorized Access" });
       }
       jwt.verify(token, process.env.PRIVATE_KEY, (err, decoded) => {
         if (err) {
-          return res.status(401).send({ message: "Unauthorized Access" });
+          return res.status(404).send({ message: "Not Found" });
         }
         req.decoded = decoded;
         next();
@@ -100,7 +106,7 @@ async function run() {
         .send({ message: "cookie set the token" });
     });
     app.get("/menu", async (req, res) => {
-      console.log("api menu hitting")
+      // console.log("api menu hitting")
       const cursor = menuCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -197,124 +203,14 @@ async function run() {
 
     const tran_id = new ObjectId().toString();
     
-    // app.post("/order",VerifyToken, async (req, res) => {
-    //   const orderInfo = req.body;
-    //   console.log(orderInfo);
-    //   let orderIds = orderInfo.orderIds || [];
-    //   const objectOrderIds = orderIds.map(id => ObjectId.createFromHexString(id) )
-    //   console.log(objectOrderIds);
-    //   const products = await menuCollection
-    //     .find({
-    //       _id: {
-    //         $in: objectOrderIds,
-    //       },
-    //     })
-    //     .toArray();
-    //   const totalAmount = products.reduce((acc, currentValue) => {
-    //     return acc + Number(currentValue.price);
-    //   }, 0);
-
-    //   const data = {
-    //     total_amount: totalAmount,
-    //     currency: orderInfo.currency,
-    //     tran_id: tran_id, // use unique tran_id for each api call
-    //     success_url: `http://localhost:5000/payment/success/${tran_id}`,
-    //     fail_url: `http://localhost:5000/payment/fail/${tran_id}`,
-    //     cancel_url: "http://localhost:3030/cancel",
-    //     ipn_url: "http://localhost:5000/payment/ipn",
-    //     shipping_method: "Courier",
-    //     product_name: orderInfo.name,
-    //     product_category: "Electronic",
-    //     product_profile: "general",
-    //     cus_name: orderInfo.name,
-    //     cus_email: orderInfo.email,
-    //     cus_add1: orderInfo.address,
-    //     cus_add2: "Dhaka",
-    //     cus_city: orderInfo.city,
-    //     cus_state: orderInfo.region,
-    //     cus_postcode: "1000",
-    //     cus_country: "Bangladesh",
-    //     cus_phone: orderInfo.phone,
-    //     cus_fax: "01711111111",
-    //     ship_name: "Customer Name",
-    //     ship_add1: "Dhaka",
-    //     ship_add2: "Dhaka",
-    //     ship_city: "Dhaka",
-    //     ship_state: "Dhaka",
-    //     ship_postcode: 1000,
-    //     ship_country: "Bangladesh",
-    //   };
-    //   // console.log(data);
-    //   const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
-    //   sslcz.init(data).then((apiResponse) => {
-    //     // console.log('apiresponse', apiResponse)
-    //     // Redirect the user to payment gateway
-    //     let GatewayPageURL = apiResponse.GatewayPageURL;
-    //     //send a order to the database
-    //     const beforeSuccessPayment = {
-    //       products,
-    //       paidStatus: false,
-    //       tran_id,
-    //       totalAmount,
-    //       email: orderInfo.email,
-    //       name: orderInfo.name,
-    //       phone: orderInfo.phone,
-    //       region: orderInfo.region,
-    //       city: orderInfo.city,
-    //       currency: orderInfo.currency,
-    //       address: orderInfo.address,
-    //       orderIds: orderInfo.orderIds,
-    //       date: orderInfo.date,
-    //     };
-    //     const response = ordersCollection.insertOne(beforeSuccessPayment);
-    //     res.status(200).send(GatewayPageURL);
-
-    //     console.log("Redirecting to: ", GatewayPageURL, {totalAmount}, {products});
-    //   });
-
-    //   app.post("/payment/success/:tranId", async (req, res) => {
-    //     await ordersCollection.updateOne(
-    //       { tran_id: req.params.tranId },
-    //       {
-    //         $set: {
-    //           paidStatus: true,
-    //         },
-    //       }
-    //     );
-    //     const deleteCartItem = await cartsCollection.deleteMany({email: orderInfo.email, menuId: {$in: orderIds}})
-    //     console.log(deleteCartItem, orderInfo.email, {orderIds});
-        
-    //     res.redirect(
-    //       `http://localhost:5173/dashboard/payment/success/?tranId=${req.params.tranId}&amount=${totalAmount}`
-    //     );
-    //   });
-    //   console.log({orderIds})
-
-    //   app.post("/payment/fail/:tranId", async (req, res) => {
-    //     console.log(req.params.tranId);
-    //     await ordersCollection.updateOne(
-    //       { tran_id: req.params.tranId },
-    //       {
-    //         $set: {
-    //           paidStatus: false,
-    //         },
-    //       }
-    //     );
-    //     res.redirect(
-    //       `http://localhost:5173/dashboard/payment/fail/${req.params.tranId}`
-    //     );
-    //   });
-    // });
-
-    
-    //updated code for payment api sslcommerz
+    // payment api sslcommerz
     app.post("/order", VerifyToken, async (req, res) => {
       const orderInfo = req.body;
-      console.log(orderInfo);
+      // console.log(orderInfo);
       
       let orderIds = orderInfo.orderIds || [];
       const objectOrderIds = orderIds.map(id => ObjectId.createFromHexString(id));
-      console.log(objectOrderIds);
+      // console.log(objectOrderIds);
       
       const products = await menuCollection
         .find({ _id: { $in: objectOrderIds } })
@@ -382,7 +278,7 @@ async function run() {
         await ordersCollection.insertOne(beforeSuccessPayment);
         
         res.status(200).send(GatewayPageURL);
-        console.log("Redirecting to: ", GatewayPageURL, { totalAmount }, { products });
+      
     
       } catch (error) {
         console.error("Error during payment initialization:", error);
@@ -407,10 +303,10 @@ async function run() {
           menuId: { $in: order.orderIds } // Use the order's orderIds here
         });
     
-        console.log(deleteCartItem, order.email, { orderIds: order.orderIds });
+        
         
         res.redirect(
-          `http://localhost:5173/dashboard/payment/success/?tranId=${tranId}&amount=${order.totalAmount}`
+          `https://simple-restaurent.web.app/dashboard/payment/success/?tranId=${tranId}&amount=${order.totalAmount}`
         );
       } else {
         console.error("Order not found:", tranId);
@@ -420,7 +316,7 @@ async function run() {
     
     app.post("/payment/fail/:tranId", async (req, res) => {
       const tranId = req.params.tranId;
-      console.log(tranId);
+
       
       await ordersCollection.updateOne(
         { tran_id: tranId },
@@ -428,7 +324,7 @@ async function run() {
       );
       
       res.redirect(
-        `http://localhost:5173/dashboard/payment/fail/${tranId}`
+        `https://simple-restaurent.web.app/dashboard/payment/fail/${tranId}`
       );
     });
     
@@ -450,9 +346,10 @@ async function run() {
 
     //set isAdmin dashboard routes.
     app.get("/user/admin/:email", VerifyToken, async (req, res) => {
+      // console.log('1 api hitting')
       const userEmail = req.params.email;
       if (userEmail !== req.decoded.email) {
-        res.status(200).send({ message: "Normal Access" });
+        res.status(200).send({ message: "Access Granted" });
       }
       const query = { email: userEmail };
       const user = await usersCollection.findOne(query);
@@ -465,41 +362,31 @@ async function run() {
 
     app.post("/add-item", async (req, res) => {
       const itemInfo = req.body;
+      // console.log(itemInfo)
       const result = await menuCollection.insertOne(itemInfo);
       res.send(result);
     });
 
     app.get('/menuItem/:id',VerifyToken, VerifyAdmin, async(req, res) =>{
-      const query = {_id : req?.params?.id}
+      const query = {_id : new ObjectId(req?.params?.id) }
       const result = await menuCollection.findOne(query);
+      // console.log(result)
       res.status(200).send(result)
     })
 
-    // app.post("/update-item", async (req, res) => {
-    //   const itemInfo = req.body;
-    //   const result = await menuCollection.updateOne(itemInfo);
-    //   res.send(result);
-    // });
-
-    //update item information api
 
     app.put("/updateItem/:id", VerifyToken, VerifyAdmin, async (req, res) => {
       const id = req.params.id;
-      const query = { _id: id };
+      const query = { _id: new ObjectId(id) };
       const itemInfo = req.body; // Data received from the client
       const updateDoc = { $set: {} }; // This will store the fields to be updated
     
-      console.log("Initial updateDoc:", updateDoc);
-      console.log("Received itemInfo:", itemInfo);
+    
     
       if (itemInfo) {
-        // Iterate over the itemInfo object
+        
         Object.keys(itemInfo).forEach((key) => {
           const value = itemInfo[key];
-          console.log({value})
-    
-          // Log key and value to check their status
-          console.log(`Checking key: ${key}, value: ${value}`);
     
           // Add only non-empty, non-null, non-undefined fields
           if (value !== undefined && value !== null && value !== "") {
@@ -525,7 +412,7 @@ async function run() {
 
     //delete menu item from database
     app.delete('/deleteItem/:id',VerifyToken, VerifyAdmin, async(req, res)=>{
-      const result = await menuCollection.deleteOne({_id: req.params.id})
+      const result = await menuCollection.deleteOne({_id: new ObjectId(req.params.id) })
       res.status(200).send(result)
     })
     
@@ -546,6 +433,7 @@ async function run() {
     })
 
     app.patch("/user/admin/:id", async (req, res) => {
+      // console.log('2 api hitting')
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
@@ -558,6 +446,7 @@ async function run() {
     });
 
     app.delete("/user/admin/:id", async (req, res) => {
+      // console.log('3 api hitting')
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await usersCollection.deleteOne(query);
@@ -579,7 +468,7 @@ async function run() {
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
   } catch (error) {
-    console.log(error);
+    // console.log(error);
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -592,5 +481,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`pothik's server app listening on port ${port}`);
+  // console.log(`pothik's server app listening on port ${port}`);
 });
