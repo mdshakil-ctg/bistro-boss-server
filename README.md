@@ -132,5 +132,4 @@ Contributions are welcome! Feel free to open issues or submit pull requests for 
 
 Contact
 For any queries, feel free to reach out at:
-Email: [your.email@example.com]
-GitHub: https://github.com/yourusername
+Email: [developer.shakil.ctg@gmail.com]
